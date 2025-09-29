@@ -1,0 +1,45 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Environment variables
+.env
+
+# Database
+instance/users.db
+instance/users.db.bak
+
+# FAISS index and uploads
+instance/faiss_index/
+instance/books/uploads/
+
+# Node.js
+frontend/node_modules/
+frontend/build/
+frontend/.env
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
