@@ -19,11 +19,14 @@ const AdminDashboard = () => {
     const [bookAnalytics, setBookAnalytics] = useState([]);
     const { user } = useContext(AuthContext);
 
+    // Use environment variable for API URL, default to empty string (relative path) for production
+    const API_URL = process.env.REACT_APP_API_URL || "";
+
     useEffect(() => {
         const fetchBooks = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const response = await axios.get('http://localhost:8000/admin/books', {
+                const response = await axios.get(`${API_URL}/admin/books`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setBooks(response.data);
@@ -36,10 +39,10 @@ const AdminDashboard = () => {
             try {
                 const token = localStorage.getItem('token');
                 const [userResponse, bookResponse] = await Promise.all([
-                    axios.get('http://localhost:8000/admin/analytics/users', {
+                    axios.get(`${API_URL}/admin/analytics/users`, {
                         headers: { Authorization: `Bearer ${token}` }
                     }),
-                    axios.get('http://localhost:8000/admin/analytics/books', {
+                    axios.get(`${API_URL}/admin/analytics/books`, {
                         headers: { Authorization: `Bearer ${token}` }
                     })
                 ]);
@@ -55,8 +58,8 @@ const AdminDashboard = () => {
     }, []);
 
     useEffect(() => {
-  console.log("Book Analytics:", bookAnalytics);
-}, [bookAnalytics]);
+        console.log("Book Analytics:", bookAnalytics);
+    }, [bookAnalytics]);
 
     const handleFileChange = (e) => {
         setFiles(e.target.files);
@@ -77,14 +80,14 @@ const AdminDashboard = () => {
         }
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.post('http://localhost:8000/admin/books/upload', formData, {
+            const response = await axios.post(`${API_URL}/admin/books/upload`, formData, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'multipart/form-data'
                 }
             });
             toast.success(response.data.message, { position: 'top-right' });
-            const booksResponse = await axios.get('http://localhost:8000/admin/books', {
+            const booksResponse = await axios.get(`${API_URL}/admin/books`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setBooks(booksResponse.data);
@@ -102,11 +105,11 @@ const AdminDashboard = () => {
         setActionLoading((prev) => ({ ...prev, [bookId]: true }));
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.post('http://localhost:8000/admin/books/toggle', { id: bookId, active }, {
+            const response = await axios.post(`${API_URL}/admin/books/toggle`, { id: bookId, active }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             toast.success(response.data.message, { position: 'top-right' });
-            const booksResponse = await axios.get('http://localhost:8000/admin/books', {
+            const booksResponse = await axios.get(`${API_URL}/admin/books`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setBooks(booksResponse.data);
@@ -123,11 +126,11 @@ const AdminDashboard = () => {
         setActionLoading((prev) => ({ ...prev, [bookId]: true }));
         try {
             const token = localStorage.getItem('token');
-            const response = await axios.post('http://localhost:8000/admin/books/delete', { id: bookId }, {
+            const response = await axios.post(`${API_URL}/admin/books/delete`, { id: bookId }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             toast.success(response.data.message, { position: 'top-right' });
-            const booksResponse = await axios.get('http://localhost:8000/admin/books', {
+            const booksResponse = await axios.get(`${API_URL}/admin/books`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setBooks(booksResponse.data);
@@ -161,22 +164,22 @@ const AdminDashboard = () => {
     };
 
     const bookChartData = {
-  labels: bookAnalytics.map(b => b.name),
-  datasets: [
-    {
-      data: bookAnalytics.map(b => Number(b.usage_count)), // ensure numeric
-      backgroundColor: [
-        'rgba(255, 99, 132, 0.6)',
-        'rgba(75, 192, 192, 0.6)',
-        'rgba(255, 206, 86, 0.6)',
-        'rgba(54, 162, 235, 0.6)',
-        'rgba(153, 102, 255, 0.6)',
-      ],
-      borderColor: '#fff',
-      borderWidth: 2,
-    }
-  ]
-};
+        labels: bookAnalytics.map(b => b.name),
+        datasets: [
+            {
+                data: bookAnalytics.map(b => Number(b.usage_count)), // ensure numeric
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.6)',
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(255, 206, 86, 0.6)',
+                    'rgba(54, 162, 235, 0.6)',
+                    'rgba(153, 102, 255, 0.6)',
+                ],
+                borderColor: '#fff',
+                borderWidth: 2,
+            }
+        ]
+    };
 
     return (
         <Container className="mt-4">
@@ -250,41 +253,40 @@ const AdminDashboard = () => {
                             </Table>
                         </Tab>
                         <Tab eventKey="analytics" title="Analytics">
-  <h4>User Activity</h4>
-  <div style={{ height: '400px', marginBottom: '20px' }}>
-    <Bar
-      data={userChartData}
-      options={{
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'top' },
-          title: { display: true, text: 'User Activity by Type' },
-        },
-        scales: {
-          y: { beginAtZero: true, title: { display: true, text: 'Count' } },
-          x: { title: { display: true, text: 'Username' } },
-        },
-      }}
-    />
-  </div>
+                            <h4>User Activity</h4>
+                            <div style={{ height: '400px', marginBottom: '20px' }}>
+                                <Bar
+                                    data={userChartData}
+                                    options={{
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        plugins: {
+                                            legend: { position: 'top' },
+                                            title: { display: true, text: 'User Activity by Type' },
+                                        },
+                                        scales: {
+                                            y: { beginAtZero: true, title: { display: true, text: 'Count' } },
+                                            x: { title: { display: true, text: 'Username' } },
+                                        },
+                                    }}
+                                />
+                            </div>
 
-  <h4>Book Usage</h4>
-  <div style={{ height: '400px' }}>
-    <Pie
-      data={bookChartData}
-      options={{
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'top' },
-          title: { display: true, text: 'Book Usage in Chats' },
-        },
-      }}
-    />
-  </div>
-</Tab>
-
+                            <h4>Book Usage</h4>
+                            <div style={{ height: '400px' }}>
+                                <Pie
+                                    data={bookChartData}
+                                    options={{
+                                        responsive: true,
+                                        maintainAspectRatio: false,
+                                        plugins: {
+                                            legend: { position: 'top' },
+                                            title: { display: true, text: 'Book Usage in Chats' },
+                                        },
+                                    }}
+                                />
+                            </div>
+                        </Tab>
                     </Tabs>
                 </Card.Body>
             </Card>

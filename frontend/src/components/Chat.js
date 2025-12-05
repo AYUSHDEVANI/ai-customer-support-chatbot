@@ -29,8 +29,7 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-const API_URL = "http://localhost:8000/chat";
-// const API_URL = "https://0785b392eac8.ngrok-free.app/chat";
+const API_URL = (process.env.REACT_APP_API_URL || "") + "/chat";
 
 function Chat() {
   const [messages, setMessages] = useState([]);
