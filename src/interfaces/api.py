@@ -56,19 +56,7 @@ from fastapi.responses import FileResponse
 if os.path.exists("/app/static"):
     app.mount("/static", StaticFiles(directory="/app/static/static"), name="static")
 
-    @app.get("/{full_path:path}")
-    async def serve_react_app(full_path: str):
-        # API routes are already handled above this catch-all
-        # If file exists in static, serve it
-        if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("openapi.json"):
-             raise HTTPException(status_code=404, detail="Not Found")
-        
-        file_path = f"/app/static/{full_path}"
-        if os.path.exists(file_path) and os.path.isfile(file_path):
-            return FileResponse(file_path)
-            
-        # Otherwise serve index.html for client-side routing
-        return FileResponse("/app/static/index.html")
+
 
 Base.metadata.create_all(bind=engine)
 
@@ -412,3 +400,17 @@ async def book_analytics(
 #     async with pubsub.subscribe(websocket, topic="admin_notifications") as subscriber:
 #         async for event in subscriber:
 #             await websocket.send_text(event.message)
+
+@app.get("/{full_path:path}")
+async def serve_react_app(full_path: str):
+    # API routes are already handled above this catch-all
+    # If file exists in static, serve it
+    if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("openapi.json"):
+            raise HTTPException(status_code=404, detail="Not Found")
+    
+    file_path = f"/app/static/{full_path}"
+    if os.path.exists(file_path) and os.path.isfile(file_path):
+        return FileResponse(file_path)
+        
+    # Otherwise serve index.html for client-side routing
+    return FileResponse("/app/static/index.html")
