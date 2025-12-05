@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: ai-customer-support-chatbot
+    env: docker
+    plan: free
+    branch: main
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: GROQ_API_KEY
+        sync: false
+      - key: PINECONE_API_KEY
+        sync: false
+      - key: HUGGINGFACE_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: chatbot-db
+          property: connectionString
+
+databases:
+  - name: chatbot-db
+    databaseName: chatbot
+    user: chatbot_user
+    plan: free
