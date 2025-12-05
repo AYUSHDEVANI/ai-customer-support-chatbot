@@ -38,13 +38,37 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # app.on_event("shutdown")(pubsub.stop)
 
 
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["*"],  # Allow all for simplicity, or restrict to ["http://localhost:3000"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+# Check if static directory exists (it will in Docker)
+if os.path.exists("/app/static"):
+    app.mount("/static", StaticFiles(directory="/app/static/static"), name="static")
+
+    @app.get("/{full_path:path}")
+    async def serve_react_app(full_path: str):
+        # API routes are already handled above this catch-all
+        # If file exists in static, serve it
+        if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("openapi.json"):
+             raise HTTPException(status_code=404, detail="Not Found")
+        
+        file_path = f"/app/static/{full_path}"
+        if os.path.exists(file_path) and os.path.isfile(file_path):
+            return FileResponse(file_path)
+            
+        # Otherwise serve index.html for client-side routing
+        return FileResponse("/app/static/index.html")
 
 Base.metadata.create_all(bind=engine)
 

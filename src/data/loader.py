@@ -1,6 +1,6 @@
 from langchain_community.document_loaders import PyPDFLoader
 from sqlalchemy.orm import Session
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from src.db.models import Book
 from src.db.database import get_db
 from src.utils.logger import setup_logger

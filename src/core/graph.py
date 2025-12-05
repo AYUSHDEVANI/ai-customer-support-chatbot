@@ -1,5 +1,6 @@
 from langgraph.graph import StateGraph, END
-from langchain.agents import AgentExecutor
+import traceback
+from langchain_classic.agents import AgentExecutor
 from src.core.agent import get_agent
 from src.core.tools import human_handoff_tool, make_faq_retriever_tool
 from src.core.memory import AgentState, trim_history
@@ -7,7 +8,9 @@ from src.db.models import User
 from src.utils.logger import setup_logger
 from langchain_core.messages import HumanMessage, AIMessage
 from sqlalchemy.orm import Session
-from langchain.callbacks import LangChainTracer
+# try this (common in newer versions)
+from langchain_core.tracers.langchain import LangChainTracer
+
 
 logger = setup_logger()
 
@@ -44,6 +47,7 @@ def agent_node(state: AgentState, db: Session) -> AgentState:
         }
     except Exception as e:
         logger.error(f"Error in agent_node: {str(e)}")
+        logger.error(traceback.format_exc())
         full_history = state.get("chat_history", []) + [
             HumanMessage(content=state["input"]),
             AIMessage(content=f"Error: {str(e)}")

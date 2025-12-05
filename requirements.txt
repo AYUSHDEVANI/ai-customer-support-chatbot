@@ -2,6 +2,7 @@ langgraph
 langchain
 fastapi
 uvicorn
+gunicorn
 python-dotenv
 langchain-groq
 faiss-cpu
@@ -17,3 +18,8 @@ python-multipart
 slowapi
 websockets
 fastapi-websocket-pubsub
+psycopg2
+langchain-pinecone
+pinecone-client
+bcrypt==4.0.1
+langchain-text-splitters
