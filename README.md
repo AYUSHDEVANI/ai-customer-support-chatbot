@@ -121,7 +121,7 @@ The chatbot leverages **LangChain + LangGraph** for agentic workflows, **FAISS**
 
 4. Run the backend:
    ```bash
-   uvicorn interfaces.api:app --reload
+   uvicorn src.interfaces.api:app --reload
    ```
    Backend available at: 👉 [http://localhost:8000](http://localhost:8000)
 
