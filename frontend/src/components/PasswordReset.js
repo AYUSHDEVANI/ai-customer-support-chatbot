@@ -13,6 +13,9 @@ const PasswordReset = () => {
     const [loading, setLoading] = useState(false);
     const [step, setStep] = useState(1); // 1: Request, 2: Reset
 
+    // Use environment variable for API URL, default to empty string (relative path) for production
+    const API_URL = process.env.REACT_APP_API_URL || "";
+
     const handleRequest = async (e) => {
         e.preventDefault();
         if (!username) {
@@ -24,7 +27,7 @@ const PasswordReset = () => {
         setLoading(true);
         setError('');
         try {
-            const response = await axios.post('http://localhost:8000/password-reset-request', {
+            const response = await axios.post(`${API_URL}/password-reset-request`, {
                 username
             });
             setToken(response.data.token); // For testing, use returned token
@@ -50,7 +53,7 @@ const PasswordReset = () => {
         setLoading(true);
         setError('');
         try {
-            await axios.post('http://localhost:8000/password-reset', {
+            await axios.post(`${API_URL}/password-reset`, {
                 username,
                 token,
                 new_password: newPassword
