@@ -1,58 +1,116 @@
-from langchain_community.vectorstores import FAISS
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_pinecone import PineconeVectorStore
+from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from sqlalchemy.orm import Session
-import os
-import time
-from filelock import FileLock
-from src.config.settings import EMBEDDING_MODEL, FAISS_INDEX_PATH
+from pinecone import Pinecone, ServerlessSpec
+from src.config.settings import EMBEDDING_MODEL, PINECONE_API_KEY, PINECONE_INDEX_NAME, HUGGINGFACE_API_KEY
 from src.data.loader import load_documents_from_books
-from src.db.database import get_db
 from src.db.models import Book
 from src.utils.logger import setup_logger
 
 logger = setup_logger()
 
 def build_vector_store(db: Session, force_rebuild: bool = False):
-    index_path = os.path.join(FAISS_INDEX_PATH, "index.faiss")
-    last_modified = os.path.getmtime(index_path) if os.path.exists(index_path) else 0
+    """
+    Build or update the Pinecone vector store with active books.
+    If force_rebuild is True, deletes all vectors and re-uploads.
+    """
+    logger.info("Connecting to Pinecone...")
+    
+    # Initialize Pinecone
+    pc = Pinecone(api_key=PINECONE_API_KEY)
+    
+    # Check if index exists, create if not
+    if PINECONE_INDEX_NAME not in pc.list_indexes().names():
+        logger.info(f"Creating new Pinecone index: {PINECONE_INDEX_NAME}")
+        pc.create_index(
+            name=PINECONE_INDEX_NAME,
+            dimension=384,  # all-MiniLM-L6-v2 dimension
+            metric="cosine",
+            spec=ServerlessSpec(cloud="aws", region="us-east-1")
+        )
+    
+    index = pc.Index(PINECONE_INDEX_NAME)
+    
+    # Initialize embeddings
+    embeddings = HuggingFaceEndpointEmbeddings(
+        huggingfacehub_api_token=HUGGINGFACE_API_KEY, 
+        model=EMBEDDING_MODEL
+    )
+    
+    # Load active books
     books = db.query(Book).filter(Book.active == True).all()
-    books_modified = any(os.path.getmtime(book.path) > last_modified for book in books)
     
-    if not force_rebuild and os.path.exists(index_path) and not books_modified:
-        logger.info("FAISS index up-to-date, skipping rebuild")
-        embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
-        return FAISS.load_local(FAISS_INDEX_PATH, embeddings=embeddings, allow_dangerous_deserialization=True)
+    if not books:
+        logger.warning("No active books found for vector store")
+        return None
     
-    lock = FileLock(f"{FAISS_INDEX_PATH}/index.lock")
-    with lock:
-        logger.info("Rebuilding FAISS index for active books")
-        docs = load_documents_from_books(db)
-        if not docs:
-            logger.warning("No active books found for vector store")
-            return None
-        embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
-        vector_store = FAISS.from_documents(docs, embedding=embeddings)
-        vector_store.save_local(FAISS_INDEX_PATH)
-        return vector_store
+    # If force rebuild, delete all vectors
+    if force_rebuild:
+        logger.info("Force rebuild: Deleting all vectors from Pinecone index")
+        try:
+            index.delete(delete_all=True)
+        except Exception as e:
+            logger.warning(f"Could not delete vectors (index might be empty): {e}")
+    
+    # Load documents from active books
+    docs = load_documents_from_books(db)
+    
+    if not docs:
+        logger.warning("No documents loaded from active books")
+        return None
+    
+    logger.info(f"Uploading {len(docs)} documents to Pinecone")
+    
+    # Create vector store and upload documents
+    vector_store = PineconeVectorStore.from_documents(
+        documents=docs,
+        embedding=embeddings,
+        index_name=PINECONE_INDEX_NAME
+    )
+    
+    logger.info("Vector store built successfully")
+    return vector_store
 
 def get_retriever(db: Session):
-    embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
+    """
+    Get a retriever for the Pinecone vector store.
+    """
+    logger.info("Initializing Pinecone retriever...")
+    
+    # Initialize embeddings
+    embeddings = HuggingFaceEndpointEmbeddings(
+        huggingfacehub_api_token=HUGGINGFACE_API_KEY, 
+        model=EMBEDDING_MODEL
+    )
+    
     try:
-        vector_store = FAISS.load_local(FAISS_INDEX_PATH, embeddings=embeddings, allow_dangerous_deserialization=True)
+        # Connect to existing Pinecone index
+        vector_store = PineconeVectorStore(
+            index_name=PINECONE_INDEX_NAME,
+            embedding=embeddings
+        )
+        
         retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 2})
+        
         def wrapped_retriever(query):
             docs = retriever.invoke(query)
             used_book_ids = [doc.metadata.get("book_id") for doc in docs if doc.metadata.get("book_id")]
             return {"results": [doc.page_content for doc in docs], "used_book_ids": used_book_ids}
+        
         return wrapped_retriever
+    
     except Exception as e:
-        logger.warning(f"FAISS index load failed: {e}, rebuilding...")
+        logger.warning(f"Pinecone retriever initialization failed: {e}, rebuilding...")
         vector_store = build_vector_store(db, force_rebuild=True)
+        
         if vector_store:
             retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 2})
+            
             def wrapped_retriever(query):
                 docs = retriever.invoke(query)
                 used_book_ids = [doc.metadata.get("book_id") for doc in docs if doc.metadata.get("book_id")]
                 return {"results": [doc.page_content for doc in docs], "used_book_ids": used_book_ids}
+            
             return wrapped_retriever
+        
         return None
