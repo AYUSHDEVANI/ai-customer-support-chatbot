@@ -6,6 +6,7 @@ from src.config.settings import EMBEDDING_MODEL, PINECONE_API_KEY, PINECONE_INDE
 from src.data.loader import load_documents_from_book
 from src.db.models import Book
 from src.utils.logger import setup_logger
+import gc
 
 logger = setup_logger()
 
@@ -63,7 +64,7 @@ def build_vector_store(db: Session, force_rebuild: bool = False):
         docs = load_documents_from_book(book)
         
         if docs:
-            batch_size = 20
+            batch_size = 10 # Reduced to 5 to prevent OOM on Render free tier
             batch = []
             book_doc_count = 0
             
@@ -81,6 +82,7 @@ def build_vector_store(db: Session, force_rebuild: bool = False):
                         book_doc_count += len(batch)
                         logger.info(f"Uploaded batch of {len(batch)} docs for {book.name}")
                         batch = [] # Clear batch to free memory
+                        gc.collect() # Force garbage collection
                 
                 # Upload remaining docs
                 if batch:
@@ -88,6 +90,8 @@ def build_vector_store(db: Session, force_rebuild: bool = False):
                     total_docs += len(batch)
                     book_doc_count += len(batch)
                     logger.info(f"Uploaded final batch of {len(batch)} docs for {book.name}")
+                    batch = []
+                    gc.collect()
                 
                 logger.info(f"Successfully uploaded total {book_doc_count} documents for {book.name}")
                 
