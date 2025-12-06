@@ -56,27 +56,6 @@ def build_vector_store(db: Session, force_rebuild: bool = False):
     # Initialize Vector Store (wrapper)
     vector_store = PineconeVectorStore(index_name=PINECONE_INDEX_NAME, embedding=embeddings)
 
-    # Process books one by one to save memory (Batch Processing)
-    total_docs = 0
-    for book in books:
-        logger.info(f"Processing book: {book.name}...")
-        docs = load_documents_from_book(book)
-        
-        if docs:
-            logger.info(f"Uploading {len(docs)} documents for {book.name} to Pinecone...")
-            try:
-                vector_store.add_documents(docs)
-                total_docs += len(docs)
-                logger.info(f"Successfully uploaded {len(docs)} documents for {book.name}")
-            except Exception as e:
-                logger.error(f"Failed to upload documents for {book.name}: {e}")
-        else:
-            logger.warning(f"No documents extracted from {book.name}")
-
-    logger.info(f"Vector store build complete. Total documents uploaded: {total_docs}")
-    return vector_store
-
-def get_retriever(db: Session):
     """
     Get a retriever for the Pinecone vector store.
     """
@@ -95,7 +74,7 @@ def get_retriever(db: Session):
             embedding=embeddings
         )
         
-        retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 2})
+        retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 8})
         
         def wrapped_retriever(query):
             docs = retriever.invoke(query)
@@ -109,7 +88,7 @@ def get_retriever(db: Session):
         vector_store = build_vector_store(db, force_rebuild=True)
         
         if vector_store:
-            retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 2})
+            retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 8})
             
             def wrapped_retriever(query):
                 docs = retriever.invoke(query)
