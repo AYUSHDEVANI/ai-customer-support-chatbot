@@ -24,12 +24,8 @@ def load_documents_from_book(book: Book):
             # Fallback for local files (if any exist)
             loader = PyPDFLoader(book.path)
             
-        docs = loader.load()
-        for doc in docs:
-            doc.metadata["book_id"] = book.id
-            doc.metadata["source"] = book.name
-        logger.info(f"Loaded {len(docs)} documents from book: {book.name}")
-        return docs
+        # Use lazy_load to return an iterator instead of loading all docs into memory
+        return loader.lazy_load()
     except Exception as e:
         logger.error(f"Failed to load book {book.name}: {str(e)}")
         return []
