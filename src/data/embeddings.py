@@ -3,7 +3,7 @@ from langchain_huggingface import HuggingFaceEndpointEmbeddings
 from sqlalchemy.orm import Session
 from pinecone import Pinecone, ServerlessSpec
 from src.config.settings import EMBEDDING_MODEL, PINECONE_API_KEY, PINECONE_INDEX_NAME, HUGGINGFACE_API_KEY
-from src.data.loader import load_documents_from_books
+from src.data.loader import load_documents_from_book
 from src.db.models import Book
 from src.utils.logger import setup_logger
 
@@ -42,7 +42,8 @@ def build_vector_store(db: Session, force_rebuild: bool = False):
     
     if not books:
         logger.warning("No active books found for vector store")
-        return None
+        # Ensure we return a valid vector store even if empty, so retriever doesn't fail
+        return PineconeVectorStore(index_name=PINECONE_INDEX_NAME, embedding=embeddings)
     
     # If force rebuild, delete all vectors
     if force_rebuild:
@@ -52,23 +53,27 @@ def build_vector_store(db: Session, force_rebuild: bool = False):
         except Exception as e:
             logger.warning(f"Could not delete vectors (index might be empty): {e}")
     
-    # Load documents from active books
-    docs = load_documents_from_books(db)
-    
-    if not docs:
-        logger.warning("No documents loaded from active books")
-        return None
-    
-    logger.info(f"Uploading {len(docs)} documents to Pinecone")
-    
-    # Create vector store and upload documents
-    vector_store = PineconeVectorStore.from_documents(
-        documents=docs,
-        embedding=embeddings,
-        index_name=PINECONE_INDEX_NAME
-    )
-    
-    logger.info("Vector store built successfully")
+    # Initialize Vector Store (wrapper)
+    vector_store = PineconeVectorStore(index_name=PINECONE_INDEX_NAME, embedding=embeddings)
+
+    # Process books one by one to save memory (Batch Processing)
+    total_docs = 0
+    for book in books:
+        logger.info(f"Processing book: {book.name}...")
+        docs = load_documents_from_book(book)
+        
+        if docs:
+            logger.info(f"Uploading {len(docs)} documents for {book.name} to Pinecone...")
+            try:
+                vector_store.add_documents(docs)
+                total_docs += len(docs)
+                logger.info(f"Successfully uploaded {len(docs)} documents for {book.name}")
+            except Exception as e:
+                logger.error(f"Failed to upload documents for {book.name}: {e}")
+        else:
+            logger.warning(f"No documents extracted from {book.name}")
+
+    logger.info(f"Vector store build complete. Total documents uploaded: {total_docs}")
     return vector_store
 
 def get_retriever(db: Session):

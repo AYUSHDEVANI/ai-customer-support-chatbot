@@ -5,25 +5,46 @@ from src.db.models import Book
 from src.db.database import get_db
 from src.utils.logger import setup_logger
 
-# def load_documents(folder_path = "app/data/sample_docs"):
-#     """
-#     Load PDFs from the folder and return as LangChain documents.
-#     """
-
-#     loader = PyPDFLoader(DATA_PATH)
-#     return loader.load_and_split()
-
 logger = setup_logger()
+
+from src.data.storage import storage_client
+import os
+
+def load_documents_from_book(book: Book):
+    """
+    Load documents from a single book.
+    """
+    temp_path = None
+    try:
+        # Check if path is a URL (Supabase)
+        if book.path.startswith("http"):
+            temp_path = storage_client.download_to_temp(book.path, book.name)
+            loader = PyPDFLoader(temp_path)
+        else:
+            # Fallback for local files (if any exist)
+            loader = PyPDFLoader(book.path)
+            
+        docs = loader.load()
+        for doc in docs:
+            doc.metadata["book_id"] = book.id
+            doc.metadata["source"] = book.name
+        logger.info(f"Loaded {len(docs)} documents from book: {book.name}")
+        return docs
+    except Exception as e:
+        logger.error(f"Failed to load book {book.name}: {str(e)}")
+        return []
+    finally:
+        # Clean up temp file
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except:
+                pass
 
 def load_documents_from_books(db: Session):
     """
     Load documents from active books in the database, including book_id in metadata.
-    
-    Args:
-        db (Session): SQLAlchemy session for database access.
-    
-    Returns:
-        List[Document]: List of documents with metadata including book_id.
+    DEPRECATED: Use load_documents_from_book in a loop for better memory management.
     """
     books = db.query(Book).filter(Book.active == True).all()
     if not books:
@@ -32,16 +53,7 @@ def load_documents_from_books(db: Session):
     
     documents = []
     for book in books:
-        try:
-            loader = PyPDFLoader(book.path)
-            docs = loader.load()
-            for doc in docs:
-                doc.metadata["book_id"] = book.id
-                doc.metadata["source"] = book.name
-            documents.extend(docs)
-            logger.info(f"Loaded {len(docs)} documents from book: {book.name}")
-        except Exception as e:
-            logger.error(f"Failed to load book {book.name}: {str(e)}")
+        docs = load_documents_from_book(book)
+        documents.extend(docs)
     
     return documents
-
