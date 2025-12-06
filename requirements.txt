@@ -23,3 +23,4 @@ langchain-pinecone
 pinecone-client
 bcrypt==4.0.1
 langchain-text-splitters
+supabase
