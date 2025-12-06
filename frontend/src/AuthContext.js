@@ -9,9 +9,6 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const navigate = useNavigate();
 
-    // Use environment variable for API URL, default to empty string (relative path) for production
-    const API_URL = process.env.REACT_APP_API_URL || "";
-
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
@@ -31,7 +28,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (username, password) => {
         try {
-            const response = await axios.post(`${API_URL}/login`, { username, password });
+            const response = await axios.post('http://localhost:8000/login', { username, password });
             const { access_token } = response.data;
             localStorage.setItem('token', access_token);
             const decoded = jwtDecode(access_token);
@@ -47,7 +44,7 @@ export const AuthProvider = ({ children }) => {
 
     const signup = async (username, password, role = 'user') => {
         try {
-            const response = await axios.post(`${API_URL}/signup`, {
+            const response = await axios.post('http://localhost:8000/signup', {
                 username,
                 password,
                 role
