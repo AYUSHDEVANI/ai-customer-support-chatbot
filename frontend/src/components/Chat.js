@@ -10,6 +10,8 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPaperPlane, faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
 import { AuthContext } from "../AuthContext";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 // Error Boundary
 class ErrorBoundary extends React.Component {
@@ -128,7 +130,15 @@ function Chat() {
                   }`}
                   style={{ maxWidth: "70%" }}
                 >
-                  {msg.content}
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      table: ({node, ...props}) => <table className="table table-bordered table-striped" {...props} />,
+                      p: ({node, ...props}) => <p className="mb-1" {...props} />
+                    }}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
                 </div>
               </div>
             ))}
