@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 import os
 import secrets
 from src.config.settings import BOOKS_UPLOAD_DIR
+from src.data.storage import storage_client
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -248,15 +249,17 @@ async def upload_book(
             raise HTTPException(status_code=400, detail="Only PDF files allowed")
         if file.size > 20 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="File too large")
-        os.makedirs(BOOKS_UPLOAD_DIR, exist_ok=True)
-        file_path = os.path.join(BOOKS_UPLOAD_DIR, file.filename)
-        with open(file_path, "wb") as buffer:
-            buffer.write(await file.read())
         
         if db.query(Book).filter(Book.name == file.filename).first():
             raise HTTPException(status_code=400, detail="Book with this name already exists")
         
-        db_book = Book(name=file.filename, path=file_path, active=False)
+        # Upload to Supabase
+        try:
+            public_url = await storage_client.upload_file(file, file.filename)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+        
+        db_book = Book(name=file.filename, path=public_url, active=False)
         db.add(db_book)
         uploaded_books.append(file.filename)
     db.commit()
@@ -320,9 +323,9 @@ async def delete_book(delete: BookDelete, current_admin: User = Depends(get_curr
         raise HTTPException(status_code=404, detail = "Book Not Found")
     
     try:
-        os.remove(book.path)
-    except OSError as e:
-        logger.warning(f"Failed to delete file {book.path}: {str(e)}")
+        storage_client.delete_file(book.name)
+    except Exception as e:
+        logger.warning(f"Failed to delete file {book.name} from storage: {str(e)}")
 
     db.delete(book)
     db.commit()
