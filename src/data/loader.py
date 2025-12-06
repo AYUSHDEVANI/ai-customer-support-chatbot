@@ -24,11 +24,11 @@ def load_documents_from_book(book: Book):
             # Fallback for local files (if any exist)
             loader = PyPDFLoader(book.path)
             
-        # Use lazy_load to return an iterator instead of loading all docs into memory
-        return loader.lazy_load()
+        # Use yield from to return an iterator and keep the function scope active
+        # This ensures the finally block (cleanup) runs ONLY after the iterator is exhausted
+        yield from loader.lazy_load()
     except Exception as e:
         logger.error(f"Failed to load book {book.name}: {str(e)}")
-        return []
     finally:
         # Clean up temp file
         if temp_path and os.path.exists(temp_path):
