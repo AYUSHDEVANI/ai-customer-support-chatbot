@@ -9,7 +9,17 @@ import PasswordReset from './components/PasswordReset';
 import { Container } from 'react-bootstrap';
 
 function App() {
-    const { user, logout } = useContext(AuthContext);
+    const { user, logout, loading } = useContext(AuthContext);
+
+    if (loading) {
+        return (
+            <div className="d-flex justify-content-center align-items-center vh-100 bg-light">
+                <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
+                    <span className="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <>

@@ -153,6 +153,14 @@ async def password_reset_request(req: PasswordResetRequest, db: Session = Depend
     user = db.query(User).filter(User.username == req.username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not Found")
+
+    # Security Fix: Prevent Admin Password Reset via Web UI
+    if user.role == "admin":
+        logger.warning(f"Blocked password reset attempt for admin user: {req.username}")
+        raise HTTPException(
+            status_code=403, 
+            detail="Admin password reset is restricted. Please contact system support or use database access."
+        )
     
     # Generate a security token
     token = secrets.token_urlsafe(32)
