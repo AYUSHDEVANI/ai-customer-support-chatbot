@@ -28,7 +28,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (username, password) => {
         try {
-            const response = await axios.post('http://localhost:8000/login', { username, password });
+            const response = await axios.post('/login', { username, password });
             const { access_token } = response.data;
             localStorage.setItem('token', access_token);
             const decoded = jwtDecode(access_token);
@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
 
     const signup = async (username, password, role = 'user') => {
         try {
-            const response = await axios.post('http://localhost:8000/signup', {
+            const response = await axios.post('/signup', {
                 username,
                 password,
                 role
