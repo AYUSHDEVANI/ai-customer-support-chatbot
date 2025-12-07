@@ -52,10 +52,28 @@ app.add_middleware(
 # Mount static files
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from pathlib import Path
 
-# Check if static directory exists (it will in Docker)
-if os.path.exists("/app/static"):
-    app.mount("/static", StaticFiles(directory="/app/static/static"), name="static")
+# Hybrid Path Logic: Docker vs Local
+docker_path = Path("/app/static")
+# Go up from src/interfaces/ -> src/ -> root -> frontend/build
+local_path = Path(__file__).parent.parent.parent / "frontend" / "build"
+
+if docker_path.exists():
+    BASE_STATIC_DIR = docker_path
+    logger.info("🚀 Running in Docker/Render environment")
+elif local_path.exists():
+    BASE_STATIC_DIR = local_path
+    logger.info("💻 Running in Local Development environment")
+else:
+    logger.warning("⚠️ Warning: Frontend build not found! Run 'npm run build' in frontend/ first.")
+    BASE_STATIC_DIR = None
+
+if BASE_STATIC_DIR:
+    # Mount the /static subdirectory specifically (for JS/CSS chunks)
+    static_assets = BASE_STATIC_DIR / "static"
+    if static_assets.exists():
+        app.mount("/static", StaticFiles(directory=str(static_assets)), name="static")
 
 
 
@@ -407,13 +425,19 @@ async def book_analytics(
 @app.get("/{full_path:path}")
 async def serve_react_app(full_path: str):
     # API routes are already handled above this catch-all
-    # If file exists in static, serve it
     if full_path.startswith("api/") or full_path.startswith("docs") or full_path.startswith("openapi.json"):
-            raise HTTPException(status_code=404, detail="Not Found")
+        raise HTTPException(status_code=404, detail="Not Found")
     
-    file_path = f"/app/static/{full_path}"
-    if os.path.exists(file_path) and os.path.isfile(file_path):
+    if not BASE_STATIC_DIR:
+        raise HTTPException(status_code=404, detail="Frontend build not found")
+
+    # Serve specific file if it exists
+    file_path = BASE_STATIC_DIR / full_path
+    if file_path.exists() and file_path.is_file():
         return FileResponse(file_path)
         
-    # Otherwise serve index.html for client-side routing
-    return FileResponse("/app/static/index.html")
+    # Otherwise serve index.html for client-side routing (SPA)
+    if (BASE_STATIC_DIR / "index.html").exists():
+        return FileResponse(BASE_STATIC_DIR / "index.html")
+        
+    raise HTTPException(status_code=404, detail="Index file not found")

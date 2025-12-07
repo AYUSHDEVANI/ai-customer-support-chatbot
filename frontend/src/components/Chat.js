@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   Container,
@@ -40,6 +41,7 @@ function Chat() {
   const [error, setError] = useState("");
   const { user, logout } = useContext(AuthContext);
   const chatEndRef = useRef(null);
+  const navigate = useNavigate();
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -95,46 +97,62 @@ function Chat() {
     }
   };
 
-  return (
+    return (
     <ErrorBoundary>
-      <Container className="mt-4 d-flex flex-column align-items-center">
-        <Card className="shadow-lg rounded-4" style={{ width: "100%", maxWidth: "700px" }}>
-          <Card.Header className="d-flex justify-content-between align-items-center bg-primary text-white rounded-top-4">
-            <h5 className="mb-0">🤖 AI Support Assistant</h5>
-            <Button variant="outline-light" size="sm" onClick={logout}>
-              <FontAwesomeIcon icon={faSignOutAlt} /> Logout
-            </Button>
+      <Container className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '100vh', padding: '20px' }}>
+        <Card className="glass-card w-100" style={{ maxWidth: "800px", height: "85vh", display: 'flex', flexDirection: 'column' }}>
+          <Card.Header className="d-flex justify-content-between align-items-center bg-transparent border-bottom-0 p-4">
+            <div className="d-flex align-items-center">
+                <div className="bg-white rounded-circle p-2 d-flex align-items-center justify-content-center me-3" style={{ width: 45, height: 45, boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+                    <span role="img" aria-label="robot" style={{ fontSize: '1.5rem' }}>🤖</span>
+                </div>
+                <div>
+                    <h5 className="mb-0 fw-bold text-dark">AI Support Agent</h5>
+                    <small className="text-secondary" style={{ fontSize: '0.8rem' }}>Always online</small>
+                </div>
+            </div>
+            <div className="d-flex align-items-center gap-2">
+                {user?.role === 'admin' && (
+                    <Button 
+                        variant="outline-primary" 
+                        size="sm" 
+                        onClick={() => navigate('/admin')}
+                        className="rounded-pill px-3 fw-bold border-2"
+                        style={{ fontSize: '0.85rem' }}
+                    >
+                         Dashboard
+                    </Button>
+                )}
+                <Button 
+                    variant="outline-danger" 
+                    size="sm" 
+                    onClick={logout}
+                    className="rounded-pill px-3 fw-bold border-2"
+                    style={{ fontSize: '0.85rem' }}
+                >
+                  <FontAwesomeIcon icon={faSignOutAlt} className="me-2" /> Logout
+                </Button>
+            </div>
           </Card.Header>
 
-          <Card.Body
-            className="chat-container"
-            style={{
-              height: "70vh",
-              overflowY: "auto",
-              background: "#f7f9fc",
-              padding: "1rem",
-            }}
-          >
+          <Card.Body className="chat-window flex-grow-1">
+            {messages.length === 0 && (
+                <div className="h-100 d-flex flex-column align-items-center justify-content-center text-muted opacity-50">
+                    <FontAwesomeIcon icon={faPaperPlane} size="3x" className="mb-3" />
+                    <p>Start a conversation...</p>
+                </div>
+            )}
             {messages.map((msg, idx) => (
               <div
                 key={idx}
-                className={`d-flex mb-3 ${
-                  msg.role === "user" ? "justify-content-end" : "justify-content-start"
-                }`}
+                className={msg.role === "user" ? "user-msg" : "ai-msg"}
               >
-                <div
-                  className={`p-3 rounded-4 shadow-sm ${
-                    msg.role === "user"
-                      ? "bg-primary text-white"
-                      : "bg-white border"
-                  }`}
-                  style={{ maxWidth: "70%" }}
-                >
+                <div className={msg.role === "user" ? "user-bubble" : "ai-bubble"}>
                   <ReactMarkdown 
                     remarkPlugins={[remarkGfm]}
                     components={{
-                      table: ({node, ...props}) => <table className="table table-bordered table-striped" {...props} />,
-                      p: ({node, ...props}) => <p className="mb-1" {...props} />
+                      table: ({node, ...props}) => <table className="table table-bordered table-sm" style={{ fontSize: '0.9rem' }} {...props} />,
+                      p: ({node, ...props}) => <p className="mb-0" {...props} />
                     }}
                   >
                     {msg.content}
@@ -144,41 +162,40 @@ function Chat() {
             ))}
 
             {loading && (
-              <div className="d-flex justify-content-start mb-3">
-                <div
-                  className="p-3 rounded-4 bg-white border shadow-sm"
-                  style={{ maxWidth: "50%" }}
-                >
-                  <span className="typing-dots">
-                    <span>.</span>
-                    <span>.</span>
-                    <span>.</span>
-                  </span>
+              <div className="ai-msg">
+                <div className="ai-bubble d-flex align-items-center" style={{ minWidth: 60 }}>
+                  <span className="typing-dot"></span>
+                  <span className="typing-dot"></span>
+                  <span className="typing-dot"></span>
                 </div>
               </div>
             )}
             <div ref={chatEndRef}></div>
           </Card.Body>
 
-          <Card.Footer className="bg-light">
+          <Card.Footer className="bg-transparent border-top-0 p-4 pt-0">
             <Form
               onSubmit={(e) => {
                 e.preventDefault();
                 handleSend();
               }}
-              className="d-flex"
+              className="position-relative"
             >
               <Form.Control
                 type="text"
                 placeholder="Type your message..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                className="rounded-pill"
+                className="rounded-pill py-3 px-4 shadow-sm border-0"
+                style={{ paddingRight: '60px', background: 'rgba(255,255,255,0.95)' }}
+                disabled={loading}
               />
               <Button
                 variant="primary"
                 type="submit"
-                className="ms-2 rounded-pill px-3"
+                className="position-absolute end-0 top-50 translate-middle-y rounded-circle me-2 d-flex align-items-center justify-content-center"
+                style={{ width: 40, height: 40, padding: 0 }}
+                disabled={!input.trim() || loading}
               >
                 <FontAwesomeIcon icon={faPaperPlane} />
               </Button>
@@ -186,28 +203,12 @@ function Chat() {
           </Card.Footer>
         </Card>
 
-        {error && <Alert className="mt-3 w-100">{error}</Alert>}
+        {error && <Alert variant="danger" className="mt-3 w-100 shadow-sm rounded-3" style={{ maxWidth: "800px" }}>{error}</Alert>}
       </Container>
-
-      {/* Typing animation CSS */}
-      <style>{`
-        .typing-dots span {
-          animation: blink 1.5s infinite;
-          display: inline-block;
-          margin-right: 2px;
-          font-size: 1.2rem;
-        }
-        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
-
-        @keyframes blink {
-          0% { opacity: 0.2; }
-          20% { opacity: 1; }
-          100% { opacity: 0.2; }
-        }
-      `}</style>
     </ErrorBoundary>
   );
 }
+
+
 
 export default Chat;

@@ -46,45 +46,47 @@ const Signup = () => {
 
     return (
         <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
-            <Card style={{ width: '100%', maxWidth: '400px', padding: '20px' }} className="shadow-lg rounded-4">
-                <Card.Body>
-                    <h2 className="text-center mb-4">Sign Up</h2>
-                    {error && <Alert variant="danger">{error}</Alert>}
+            <Card className="glass-card" style={{ width: '100%', maxWidth: '400px', border: 'none' }}>
+                <Card.Body className="p-4">
+                    <h2 className="text-center mb-4 fw-bold text-dark">Create Account</h2>
+                    {error && <Alert variant="danger" className="rounded-3">{error}</Alert>}
                     <Form onSubmit={handleSubmit}>
                         <Form.Group className="mb-3" controlId="username">
-                            <Form.Label>Username</Form.Label>
+                            <Form.Label className="fw-semibold">Username</Form.Label>
                             <Form.Control
                                 type="text"
-                                placeholder="Enter username"
+                                placeholder="Choose a username"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 required
-                                className="rounded-pill"
+                                className="mb-3"
                             />
                         </Form.Group>
-                        <Form.Group className="mb-3" controlId="password">
-                            <Form.Label>Password</Form.Label>
+                        <Form.Group className="mb-4" controlId="password">
+                            <Form.Label className="fw-semibold">Password</Form.Label>
                             <Form.Control
                                 type="password"
-                                placeholder="Enter password"
+                                placeholder="Choose a password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
-                                className="rounded-pill"
+                                className="mb-3"
                             />
                         </Form.Group>
                         <Button
                             variant="primary"
                             type="submit"
-                            className="w-100 rounded-pill"
+                            className="w-100 mb-3"
                             disabled={loading}
                         >
                             {loading ? <Spinner animation="border" size="sm" /> : 'Sign Up'}
                         </Button>
                     </Form>
                     <div className="text-center mt-3">
-                        <span>Already have an account? </span>
-                        <Link to="/login">Login</Link>
+                        <span className="text-muted">Already have an account? </span>
+                        <Link to="/login" className="fw-bold text-decoration-none" style={{ color: '#764ba2' }}>
+                            Log In
+                        </Link>
                     </div>
                 </Card.Body>
             </Card>

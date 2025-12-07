@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Container, Card, Form, Button, Table, Spinner, Alert, Tabs, Tab } from 'react-bootstrap';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -18,6 +19,7 @@ const AdminDashboard = () => {
     const [userAnalytics, setUserAnalytics] = useState([]);
     const [bookAnalytics, setBookAnalytics] = useState([]);
     const { user } = useContext(AuthContext);
+    const navigate = useNavigate();
 
     // Use environment variable for API URL, default to empty string (relative path) for production
     const API_URL = process.env.REACT_APP_API_URL || "";
@@ -182,109 +184,137 @@ const AdminDashboard = () => {
     };
 
     return (
-        <Container className="mt-4">
-            <Card className="shadow-lg rounded-4">
-                <Card.Header className="bg-primary text-white rounded-top-4">
-                    <h3 className="mb-0">Admin Dashboard</h3>
+        <Container className="mt-4" style={{ minHeight: '90vh' }}>
+            <Card className="glass-card shadow-sm border-0">
+                <Card.Header className="bg-transparent border-bottom-0 p-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 className="mb-0 fw-bold text-dark">Admin Dashboard</h3>
+                        <p className="text-secondary mb-0">Manage knowledge base and view analytics</p>
+                    </div>
+                    <div>
+                        <Button variant="outline-primary" onClick={() => navigate('/chat')} className="rounded-pill fw-bold me-2">
+                            Back to Chat
+                        </Button>
+                        <Button variant="outline-danger" onClick={() => { localStorage.removeItem('token'); window.location.href = '/login'; }} className="rounded-pill fw-bold">
+                            Logout
+                        </Button>
+                    </div>
                 </Card.Header>
-                <Card.Body>
-                    <Tabs defaultActiveKey="books" id="admin-tabs" className="mb-3">
-                        <Tab eventKey="books" title="Books">
-                            <h4>Upload Books</h4>
-                            {error && <Alert variant="danger">{error}</Alert>}
-                            <Form onSubmit={handleUpload}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Upload PDFs</Form.Label>
-                                    <Form.Control
-                                        type="file"
-                                        accept=".pdf"
-                                        multiple
-                                        onChange={handleFileChange}
-                                        className="rounded-pill"
-                                        aria-label="Upload PDFs"
-                                    />
-                                </Form.Group>
-                                <Button
-                                    variant="primary"
-                                    type="submit"
-                                    disabled={loading}
-                                    className="rounded-pill"
-                                >
-                                    {loading ? <Spinner animation="border" size="sm" /> : 'Upload'}
-                                </Button>
-                            </Form>
-                            <h4 className="mt-4">Books</h4>
-                            <Table striped bordered hover responsive aria-label="Books table">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Active</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {books.map((book) => (
-                                        <tr key={book.id}>
-                                            <td>{book.name}</td>
-                                            <td>{book.active ? 'Yes' : 'No'}</td>
-                                            <td>
-                                                <Button
-                                                    variant={book.active ? 'warning' : 'success'}
-                                                    onClick={() => handleToggle(book.id, !book.active)}
-                                                    className="rounded-pill me-2"
-                                                    disabled={actionLoading[book.id]}
-                                                    aria-label={book.active ? 'Deactivate book' : 'Activate book'}
-                                                >
-                                                    {actionLoading[book.id] ? <Spinner animation="border" size="sm" /> : (book.active ? 'Deactivate' : 'Activate')}
-                                                </Button>
-                                                <Button
-                                                    variant="danger"
-                                                    onClick={() => handleDelete(book.id, book.name)}
-                                                    className="rounded-pill"
-                                                    disabled={actionLoading[book.id]}
-                                                    aria-label={`Delete book ${book.name}`}
-                                                >
-                                                    {actionLoading[book.id] ? <Spinner animation="border" size="sm" /> : 'Delete'}
-                                                </Button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </Table>
-                        </Tab>
-                        <Tab eventKey="analytics" title="Analytics">
-                            <h4>User Activity</h4>
-                            <div style={{ height: '400px', marginBottom: '20px' }}>
-                                <Bar
-                                    data={userChartData}
-                                    options={{
-                                        responsive: true,
-                                        maintainAspectRatio: false,
-                                        plugins: {
-                                            legend: { position: 'top' },
-                                            title: { display: true, text: 'User Activity by Type' },
-                                        },
-                                        scales: {
-                                            y: { beginAtZero: true, title: { display: true, text: 'Count' } },
-                                            x: { title: { display: true, text: 'Username' } },
-                                        },
-                                    }}
-                                />
+                <Card.Body className="p-4">
+                    <Tabs defaultActiveKey="books" id="admin-tabs" className="mb-4 nav-pills">
+                        <Tab eventKey="books" title="Knowledge Base">
+                            <div className="bg-white p-4 rounded-4 shadow-sm border border-light mb-4">
+                                <h5 className="fw-bold mb-3">Upload Documents</h5>
+                                {error && <Alert variant="danger" className="rounded-3">{error}</Alert>}
+                                <Form onSubmit={handleUpload}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label className="fw-semibold">Select PDF Files</Form.Label>
+                                        <div className="d-flex gap-2">
+                                            <Form.Control
+                                                type="file"
+                                                accept=".pdf"
+                                                multiple
+                                                onChange={handleFileChange}
+                                                className="shadow-none"
+                                            />
+                                            <Button
+                                                variant="primary"
+                                                type="submit"
+                                                disabled={loading}
+                                                className="px-4"
+                                            >
+                                                {loading ? <Spinner animation="border" size="sm" /> : 'Upload'}
+                                            </Button>
+                                        </div>
+                                    </Form.Group>
+                                </Form>
                             </div>
 
-                            <h4>Book Usage</h4>
-                            <div style={{ height: '400px' }}>
-                                <Pie
-                                    data={bookChartData}
-                                    options={{
-                                        responsive: true,
-                                        maintainAspectRatio: false,
-                                        plugins: {
-                                            legend: { position: 'top' },
-                                            title: { display: true, text: 'Book Usage in Chats' },
-                                        },
-                                    }}
-                                />
+                            <h5 className="fw-bold mb-3">Manage Books</h5>
+                            <div className="table-responsive bg-white rounded-4 shadow-sm border border-light p-2">
+                                <Table hover className="mb-0 align-middle">
+                                    <thead className="bg-light text-secondary">
+                                        <tr>
+                                            <th className="border-0 ps-4">Name</th>
+                                            <th className="border-0">Status</th>
+                                            <th className="border-0 text-end pe-4">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {books.map((book) => (
+                                            <tr key={book.id}>
+                                                <td className="ps-4 fw-medium text-dark">{book.name}</td>
+                                                <td>
+                                                    <span className={`badge rounded-pill ${book.active ? 'bg-success bg-opacity-10 text-success' : 'bg-secondary bg-opacity-10 text-secondary'}`}>
+                                                        {book.active ? 'Active' : 'Inactive'}
+                                                    </span>
+                                                </td>
+                                                <td className="text-end pe-4">
+                                                    <Button
+                                                        variant={book.active ? 'outline-warning' : 'outline-success'}
+                                                        size="sm"
+                                                        onClick={() => handleToggle(book.id, !book.active)}
+                                                        className="rounded-pill me-2 fw-semibold"
+                                                        disabled={actionLoading[book.id]}
+                                                    >
+                                                        {actionLoading[book.id] ? <Spinner animation="border" size="sm" /> : (book.active ? 'Deactivate' : 'Activate')}
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline-danger"
+                                                        size="sm"
+                                                        onClick={() => handleDelete(book.id, book.name)}
+                                                        className="rounded-pill fw-semibold"
+                                                        disabled={actionLoading[book.id]}
+                                                    >
+                                                        {actionLoading[book.id] ? <Spinner animation="border" size="sm" /> : 'Delete'}
+                                                    </Button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </Table>
+                            </div>
+                        </Tab>
+                        <Tab eventKey="analytics" title="Analytics">
+                            <div className="row g-4">
+                                <div className="col-md-6">
+                                    <div className="bg-white p-4 rounded-4 shadow-sm border border-light h-100">
+                                        <h5 className="fw-bold mb-4">User Activity</h5>
+                                        <div style={{ height: '300px' }}>
+                                            <Bar
+                                                data={userChartData}
+                                                options={{
+                                                    responsive: true,
+                                                    maintainAspectRatio: false,
+                                                    plugins: {
+                                                        legend: { position: 'top' },
+                                                    },
+                                                    scales: {
+                                                        y: { beginAtZero: true, grid: { display: false } },
+                                                        x: { grid: { display: false } },
+                                                    },
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="col-md-6">
+                                    <div className="bg-white p-4 rounded-4 shadow-sm border border-light h-100">
+                                        <h5 className="fw-bold mb-4">Popular Sources</h5>
+                                        <div style={{ height: '300px' }}>
+                                            <Pie
+                                                data={bookChartData}
+                                                options={{
+                                                    responsive: true,
+                                                    maintainAspectRatio: false,
+                                                    plugins: {
+                                                        legend: { position: 'right' },
+                                                    },
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </Tab>
                     </Tabs>

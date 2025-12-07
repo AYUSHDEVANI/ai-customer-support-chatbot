@@ -68,13 +68,13 @@ const Login = () => {
 
     return (
         <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
-            <Card style={{ width: '100%', maxWidth: '400px', padding: '20px' }} className="shadow-lg rounded-4">
-                <Card.Body>
-                    <h2 className="text-center mb-4">Login</h2>
-                    {error && <Alert variant="danger">{error}</Alert>}
+            <Card className="glass-card" style={{ width: '100%', maxWidth: '400px', border: 'none' }}>
+                <Card.Body className="p-4">
+                    <h2 className="text-center mb-4 fw-bold text-dark">Welcome Back</h2>
+                    {error && <Alert variant="danger" className="rounded-3">{error}</Alert>}
                     <Form noValidate validated={validated} onSubmit={handleSubmit}>
                         <Form.Group className="mb-3" controlId="username">
-                            <Form.Label>Username</Form.Label>
+                            <Form.Label className="fw-semibold">Username</Form.Label>
                             <Form.Control
                                 type="text"
                                 value={username}
@@ -83,16 +83,15 @@ const Login = () => {
                                 ref={usernameRef}
                                 required
                                 isInvalid={validated && !username}
-                                placeholder="Enter username"
-                                className="rounded-pill"
-                                aria-label="Username"
+                                placeholder="Enter your username"
+                                className="mb-3"
                             />
                             <Form.Control.Feedback type="invalid">
                                 Please enter a username.
                             </Form.Control.Feedback>
                         </Form.Group>
-                        <Form.Group className="mb-3" controlId="password">
-                            <Form.Label>Password</Form.Label>
+                        <Form.Group className="mb-4" controlId="password">
+                            <Form.Label className="fw-semibold">Password</Form.Label>
                             <InputGroup>
                                 <Form.Control
                                     type={showPassword ? 'text' : 'password'}
@@ -101,14 +100,13 @@ const Login = () => {
                                     onKeyDown={handleKeyDown}
                                     required
                                     isInvalid={validated && !password}
-                                    placeholder="Enter password"
-                                    className="rounded-pill"
-                                    aria-label="Password"
+                                    placeholder="Enter your password"
                                 />
                                 <Button
-                                    variant="outline-secondary"
+                                    variant="outline-light"
+                                    className="border-0 text-secondary bg-white"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                    style={{ borderLeft: 'none' }}
                                 >
                                     <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
                                 </Button>
@@ -121,16 +119,20 @@ const Login = () => {
                             variant="primary"
                             type="submit"
                             disabled={loading}
-                            className="w-100 rounded-pill"
+                            className="w-100 mb-3"
                         >
-                            {loading ? <Spinner animation="border" size="sm" /> : 'Login'}
+                            {loading ? <Spinner animation="border" size="sm" /> : 'Log In'}
                         </Button>
                     </Form>
                     <div className="text-center mt-3">
-                        <span>Don't have an account? </span>
-                        <Link to="/signup">Sign Up</Link>
+                        <span className="text-muted">Don't have an account? </span>
+                        <Link to="/signup" className="fw-bold text-decoration-none" style={{ color: '#764ba2' }}>
+                            Sign Up
+                        </Link>
                         <br />
-                        <Link to="/password-reset">Forgot Password?</Link>
+                        <Link to="/password-reset" className="small text-muted text-decoration-none mt-2 d-inline-block">
+                            Forgot Password?
+                        </Link>
                     </div>
                 </Card.Body>
             </Card>
