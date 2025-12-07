@@ -7,6 +7,7 @@ export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -24,6 +25,7 @@ export const AuthProvider = ({ children }) => {
         } else {
             console.log('AuthContext: No token found');
         }
+        setLoading(false);
     }, []);
 
     const login = async (username, password) => {
@@ -70,7 +72,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, signup, logout }}>
+        <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
             {children}
         </AuthContext.Provider>
     );
